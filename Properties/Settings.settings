@@ -1,0 +1,39 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DatabaseModel.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="Provider" Type="System.String" Scope="User">
+      <Value Profile="(Default)">System.Data.SqlClient</Value>
+    </Setting>
+    <Setting Name="ConnectionString" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Data source=Rafael\rafael;Integrated security=true;initial catalog=neo_pruebas_nueva</Value>
+    </Setting>
+    <Setting Name="Table" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="ModelNamespace" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Modelos</Value>
+    </Setting>
+    <Setting Name="MetadataNamespace" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Metadata</Value>
+    </Setting>
+    <Setting Name="CSV" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="DomainNamespace" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Domain</Value>
+    </Setting>
+    <Setting Name="DepLevel" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="Metadata" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SaveFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="Driver" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+  </Settings>
+</SettingsFile>
