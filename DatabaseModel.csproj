@@ -40,21 +40,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DatabaseSchemaReader, Version=1.4.3.11, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DatabaseSchemaReader.1.4.3.11\lib\net40\DatabaseSchemaReader.dll</HintPath>
+    <Reference Include="DatabaseSchemaReader, Version=1.5.0.5, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\DatabaseSchemaReader.1.5.0.5\lib\net45\DatabaseSchemaReader.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Npgsql, Version=3.0.3.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Npgsql.3.0.3\lib\net45\Npgsql.dll</HintPath>
+    <Reference Include="Npgsql, Version=3.0.5.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <HintPath>packages\Npgsql.3.0.5\lib\net45\Npgsql.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PropertyChanged, Version=1.50.3.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
-      <HintPath>..\packages\PropertyChanged.Fody.1.50.3\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\PropertyChanged.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="PropertyChanged, Version=1.51.0.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
+      <HintPath>packages\PropertyChanged.Fody.1.51.0\lib\dotnet\PropertyChanged.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -68,19 +68,19 @@
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="Tonic.MVVM.VMBase">
-      <HintPath>..\..\..\..\..\Projects 2015\Tonic\UI\ViewLocator\VMBase\bin\Debug\Tonic.MVVM.VMBase.dll</HintPath>
+      <HintPath>..\..\..\Repos\Tonic.MVVM\VMBase\bin\Debug\Tonic.MVVM.VMBase.dll</HintPath>
     </Reference>
     <Reference Include="Tonic.RLinq">
-      <HintPath>..\..\..\..\..\Projects 2015\Tonic\UI\ViewLocator\RLINQ\bin\Debug\Tonic.RLinq.dll</HintPath>
+      <HintPath>..\..\..\Repos\Tonic.MVVM\RLINQ\bin\Debug\Tonic.RLinq.dll</HintPath>
     </Reference>
     <Reference Include="Tonic.UI.BoolNullVisibility">
-      <HintPath>..\..\..\..\..\Projects 2015\Tonic\UI\ViewLocator\BoolNullVisibilityConverter\BoolNullVisibilityConverter\bin\Debug\Tonic.UI.BoolNullVisibility.dll</HintPath>
+      <HintPath>..\..\..\Repos\Tonic.MVVM\BoolNullVisibilityConverter\BoolNullVisibilityConverter\bin\Debug\Tonic.UI.BoolNullVisibility.dll</HintPath>
     </Reference>
     <Reference Include="Tonic.UI.EnumSource">
-      <HintPath>..\..\..\..\..\Projects 2015\Tonic\UI\ViewLocator\EnumSourceConverter\bin\Debug\Tonic.UI.EnumSource.dll</HintPath>
+      <HintPath>..\..\..\Repos\Tonic.MVVM\EnumSourceConverter\bin\Debug\Tonic.UI.EnumSource.dll</HintPath>
     </Reference>
     <Reference Include="Tonic.UI.Host">
-      <HintPath>..\..\..\..\..\Projects 2015\Tonic\UI\ViewLocator\UIHost\bin\Debug\Tonic.UI.Host.dll</HintPath>
+      <HintPath>..\..\..\Repos\Tonic.MVVM\UIHost\bin\Debug\Tonic.UI.Host.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
@@ -140,9 +140,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="FodyWeavers.xml">
-      <SubType>Designer</SubType>
-    </Resource>
+    <Resource Include="FodyWeavers.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <UsingTask TaskName="CosturaCleanup" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll" TaskFactory="CodeTaskFactory">
@@ -178,15 +176,12 @@ foreach (var item in filesToCleanup)
 ]]></Code>
     </Task>
   </UsingTask>
-  <Target Name="CleanReferenceCopyLocalPaths" AfterTargets="AfterBuild;NonWinFodyTarget">
-    <CosturaCleanup Config="FodyWeavers.xml" Files="@(ReferenceCopyLocalPaths->'$(OutDir)%(DestinationSubDirectory)%(Filename)%(Extension)')" />
-  </Target>
-  <Import Project="..\packages\Fody.1.29.2\build\portable-net+sl+win+wpa+wp\Fody.targets" Condition="Exists('..\packages\Fody.1.29.2\build\portable-net+sl+win+wpa+wp\Fody.targets')" />
+  <Import Project="packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Fody.1.29.2\build\portable-net+sl+win+wpa+wp\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.2\build\portable-net+sl+win+wpa+wp\Fody.targets'))" />
+    <Error Condition="!Exists('packages\Fody.1.29.4\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Fody.1.29.4\build\dotnet\Fody.targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
