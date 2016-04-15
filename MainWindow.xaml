@@ -72,6 +72,8 @@
                 <Label Content="Dependency level:" />
                 <TextBox Text="{Binding DependencyLevel}" Width="40" />
                 <CheckBox Content="Metadata" IsChecked="{Binding Metadata}" />
+                <CheckBox Content="Ignore last dependency" IsChecked="{Binding IgnoreLastDependency}" />
+                <CheckBox Content="Add interface" IsChecked="{Binding AddInterface}" />
             </StackPanel>
         </ui:AutoGridN>
         <ScrollViewer  Grid.Row="2" VerticalScrollBarVisibility="Visible" >

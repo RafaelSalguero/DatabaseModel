@@ -148,6 +148,32 @@ namespace DatabaseModel
             }
         }
 
+        public bool IgnoreLastDependency
+        {
+            get
+            {
+                return Properties.Settings.Default.IgnoreLastDependency;
+            }
+            set
+            {
+                Properties.Settings.Default.IgnoreLastDependency = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        public bool AddInterface
+        {
+            get
+            {
+                return Properties.Settings.Default.AddInterface;
+            }
+            set
+            {
+                Properties.Settings.Default.AddInterface = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
         /// <summary>
         /// Compute the distance between two strings.
         /// </summary>
@@ -233,9 +259,24 @@ namespace DatabaseModel
                 return name;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Table"></param>
+        /// <param name="ViewModels"></param>
+        /// <param name="Namer"></param>
+        /// <param name="ModelNamespace"></param>
+        /// <param name="MetadataNamespace"></param>
+        /// <param name="dependencies"></param>
+        /// <param name="tableDependencies"></param>
+        /// <param name="lastDependency">Si es true se ignoraran todas las dependencias de esta tabla que esten afuera de las colección doneTables</param>
+        /// <param name="doneTables">Si lastDependency es true, implica todas las tablas que van a ser incluidas en el modelo, de tal manera que las que no esten no seran generadas</param>
+        /// <param name="metadata"></param>
+        /// <param name="AddInterface">True para generar una interfaz con todas las columnas de la tabla sin incluir las propiedades de navegación para la entidad</param>
+        /// <returns></returns>
         private static string GenerateEFModel(DatabaseTable Table, ICollection<CodeViewModel> ViewModels, INamer Namer,
-            string ModelNamespace, string MetadataNamespace, bool dependencies, HashSet<string> tableDependencies,
-            bool metadata)
+            string ModelNamespace, string MetadataNamespace, bool dependencies, HashSet<string> tableDependencies, bool lastDependency, HashSet<string> doneTables,
+            bool metadata, bool AddInterface)
         {
             var B = new StringBuilder();
             var Co = new StringBuilder();
@@ -246,8 +287,9 @@ namespace DatabaseModel
             var AttExcludes = new StringBuilder();
             var AttProps = new StringBuilder();
 
-
             var ForeignMo = new StringBuilder();
+
+            var Interface = new StringBuilder();
 
             Co.Clear();
             Co.AppendLine($"public virtual DbSet<{Table.Name}> {Table.Name} {{ get; set; }}");
@@ -264,19 +306,22 @@ namespace DatabaseModel
 
                 }
                 if (!dependencies)
+
                     foreach (var FK in Table.ForeignKeyChildren)
                     {
                         if (FK.IsManyToManyTable())
                         {
                             var Other = FK.ManyToManyTraversal(Table);
-                            var propertyName = Other.NetName;
+                            var propertyName = Other.Name;
+                            if (lastDependency && !doneTables.Contains(propertyName))
+                                break;
 
-                            tableDependencies.Add(Other.NetName);
+                            tableDependencies.Add(Other.Name);
 
-                            Cons.AppendLine($"          {propertyName} = new HashSet<{Other.NetName}>();");
+                            Cons.AppendLine($"          {propertyName} = new HashSet<{Other.Name}>();");
 
                             FCh.AppendLine("     [JsonIgnore]");
-                            FCh.AppendLine($"     public virtual ICollection<{Other.NetName}> {propertyName} {{ get; set; }}");
+                            FCh.AppendLine($"     public virtual ICollection<{Other.Name}> {propertyName} {{ get; set; }}");
                             FCh.AppendLine();
 
 
@@ -306,18 +351,16 @@ namespace DatabaseModel
                             MM.AppendLine($"     c.MapRightKey(\"Id{Other.Name}\");");
                             MM.AppendLine("});");
 
-                            if (
-                                !FK.Columns.Any(x => x.Name == $"Id{Table.Name}") ||
-                                !FK.Columns.Any(x => x.Name == $"Id{Other.Name}")
-                                )
-                                MessageBox.Show($"Las llaves foraneas entre {Table.Name} y {Other.Name} no siguen el patron Id[NombreTable]");
+
 
                             Collection = new CodeViewModel($"{Table.Name} fluent", MM.ToString());
                             ViewModels.Add(Collection);
                         }
                         else
                         {
-                            var fks = Table.InverseForeignKeys(FK);
+                            IEnumerable<DatabaseConstraint> fks = Table.InverseForeignKeys(FK);
+                            if (lastDependency)
+                                fks = fks.Where(x => doneTables.Contains(x.TableName));
 
                             var propNamesCount = new Dictionary<string, int>();
                             foreach (var fk in fks)
@@ -360,8 +403,13 @@ namespace DatabaseModel
             B.AppendLine($"namespace {ModelNamespace}");
             B.AppendLine("{");
 
+       
+
             B.AppendLine($"[Table(\"{Table.Name}\")]");
-            B.AppendLine($"public partial class {Table.Name}");
+            if (AddInterface)
+                B.AppendLine($"public partial class {Table.Name} : I{Table.Name}");
+            else
+                B.AppendLine($"public partial class {Table.Name}");
 
             B.AppendLine("{");
 
@@ -459,15 +507,21 @@ namespace DatabaseModel
                     if (NetDataType == "System.Guid")
                         NetDataType = "Guid";
                 }
-                if (Ci.IsForeignKey)
                 {
-                    if (GetForeignKeyVarName(Ci.Name) != Ci.Name)
-                        B.AppendLine($"     [Column(\"{Ci.Name}\")]");
-                    B.AppendLine($"     public {NetDataType }{ask} { GetForeignKeyVarName(Ci.Name)} {{ get; set; }}");
-                }
-                else
-                {
-                    B.AppendLine($"     public {NetDataType }{ask} {(Ci.Name)} {{ get; set; }}");
+                    string Property;
+                    if (Ci.IsForeignKey)
+                    {
+                        if (GetForeignKeyVarName(Ci.Name) != Ci.Name)
+                            B.AppendLine($"     [Column(\"{Ci.Name}\")]");
+                        Property = $"{NetDataType }{ask} { GetForeignKeyVarName(Ci.Name)}";
+                    }
+                    else
+                    {
+                        Property = $"{NetDataType }{ask} {(Ci.Name)}";
+                    }
+
+                    B.AppendLine($"     public {Property} {{ get; set; }}");
+                    Interface.AppendLine($"      {Property} {{ get; set; }}");
                 }
                 B.AppendLine();
 
@@ -506,6 +560,15 @@ namespace DatabaseModel
 
             B.AppendLine("}");
             B.AppendLine();
+
+            if (AddInterface)
+            {
+                B.AppendLine($"public interface I{Table.Name}");
+                B.AppendLine("{");
+                B.AppendLine(Interface.ToString());
+                B.AppendLine("}");
+            }
+
             B.AppendLine("}");
 
             if (metadata)
@@ -568,7 +631,7 @@ namespace DatabaseModel
             var Namer = Settings.Namer;
 
             HashSet<string> deps = new HashSet<string>();
-            Code.Insert(0, new CodeViewModel($"{Table.Name}.cs", GenerateEFModel(Table, Code, Namer, DomainNamespace + "." + ModelNamespace, DomainNamespace + "." + MetadataNamespace, false, deps, metadata), true));
+            Code.Insert(0, new CodeViewModel($"{Table.Name}.cs", GenerateEFModel(Table, Code, Namer, DomainNamespace + "." + ModelNamespace, DomainNamespace + "." + MetadataNamespace, false, deps, depLevel == 0 && IgnoreLastDependency, doneTables, metadata, this.AddInterface), true));
             if (metadata)
                 GeneratePartials(Table, Code, DomainNamespace + "." + ModelNamespace, DomainNamespace + "." + MetadataNamespace);
 

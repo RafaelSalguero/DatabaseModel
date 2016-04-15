@@ -155,5 +155,29 @@ namespace DatabaseModel.Properties {
                 this["Driver"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IgnoreLastDependency {
+            get {
+                return ((bool)(this["IgnoreLastDependency"]));
+            }
+            set {
+                this["IgnoreLastDependency"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AddInterface {
+            get {
+                return ((bool)(this["AddInterface"]));
+            }
+            set {
+                this["AddInterface"] = value;
+            }
+        }
     }
 }
