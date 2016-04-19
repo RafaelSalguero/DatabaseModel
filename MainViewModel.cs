@@ -174,6 +174,19 @@ namespace DatabaseModel
             }
         }
 
+        public bool AllTables
+        {
+            get
+            {
+                return Properties.Settings.Default.AllTables;
+            }
+            set
+            {
+                Properties.Settings.Default.AllTables = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
         /// <summary>
         /// Compute the distance between two strings.
         /// </summary>
@@ -244,19 +257,16 @@ namespace DatabaseModel
 
         private static string GetForeignKeyVarName(string name)
         {
-            if (name.ToLowerInvariant().StartsWith("id"))
-                return name;
+            if (name.ToLowerInvariant().StartsWith("__"))
+                return name.Substring(2);
             else
-                return "id" + name;
+                return name;
         }
 
 
         private static string GetForeignPropName(string name)
         {
-            if (name.ToLowerInvariant().StartsWith("id"))
-                return name.Substring(2);
-            else
-                return name;
+            return "__" + name;
         }
 
         /// <summary>
@@ -380,7 +390,9 @@ namespace DatabaseModel
 
                                 Cons.AppendLine($"          {propertyName2} = new HashSet<{FK.Name}>();");
                                 FCh.AppendLine("     [JsonIgnore]");
-                                FCh.AppendLine($"     [InverseProperty(nameof({ModelNamespace}.{FK.Name}.{GetForeignPropName(fk.Columns[0])}))]");
+
+                                var InversePropName = fk.Columns.Count == 1 ? fk.Columns[0] : fk.RefersToTable;
+                                FCh.AppendLine($"     [InverseProperty(nameof({ModelNamespace}.{FK.Name}.{GetForeignPropName(InversePropName)}))]");
                                 FCh.AppendLine($"     public virtual ICollection<{FK.Name}> {propertyName2} {{ get; set; }}");
                                 FCh.AppendLine();
                             }
@@ -403,7 +415,7 @@ namespace DatabaseModel
             B.AppendLine($"namespace {ModelNamespace}");
             B.AppendLine("{");
 
-       
+
 
             B.AppendLine($"[Table(\"{Table.Name}\")]");
             if (AddInterface)
@@ -443,10 +455,6 @@ namespace DatabaseModel
                }
            };
 
-            if (!(Table.Columns.Where(x => x.IsPrimaryKey).Any()))
-            {
-                MessageBox.Show($"Table {Table.Name} has no primary key");
-            }
 
             ////Recorre todas las llaves foraneas, incluyendo las compuestas:
             //foreach (var Fk in Table.ForeignKeys)
@@ -466,6 +474,11 @@ namespace DatabaseModel
                 if (Ci.IsPrimaryKey)
                 {
                     B.AppendLine("     [Key]");
+                    if (Table.PrimaryKey.Columns.Count > 1)
+                    {
+                        var n = Table.PrimaryKey.Columns.IndexOf(Ci.Name);
+                        B.AppendLine($"     [Column(Order = {n + 1})] ");
+                    }
                 }
 
 
@@ -524,34 +537,28 @@ namespace DatabaseModel
                     Interface.AppendLine($"      {Property} {{ get; set; }}");
                 }
                 B.AppendLine();
+            }
 
-                if (Ci.IsForeignKey)
+            foreach (var Fk in Table.ForeignKeys.Where(x => x.RefersToTable != ""))
+            {
+
+                var FirstColumnName = Fk.Columns[0];
+
                 {
-                    var collectionName = GetTableCollection(Ci.ForeignKeyTable.Name, Table.Name);
+                    B.AppendLine("     [JsonIgnore]");
 
-                    {
-                        AttExcludes.AppendLine("     [ScaffoldExclude]");
-                        AttExcludes.AppendLine($"     public object {Ci.NetName} {{ get; set; }}");
+                    string Names = Fk.Columns.Select(x => $"nameof({ModelNamespace}.{Table.Name}.{x})").Aggregate("", (a, b) => a == "" ? b : (a + Environment.NewLine + " + \", \" + " + b), x => x);
 
-                        AttProps.AppendLine($"     public object { GetForeignPropName(Ci.Name)} {{ get; set; }}");
-                        AttProps.AppendLine();
+                    B.AppendLine($"     [ForeignKey({Names})]");
+                    if (Fk.Columns.Count == 1)
+                        B.AppendLine($"     public virtual {Fk.RefersToTable} {GetForeignPropName(FirstColumnName)} {{ get; set; }}");
+                    else
+                        B.AppendLine($"     public virtual {Fk.RefersToTable} {GetForeignPropName(Fk.RefersToTable)} {{ get; set; }}");
 
-                        if (!Ci.Nullable)
-                            B.AppendLine("     [Required]");
+                    B.AppendLine();
 
-                        B.AppendLine("     [JsonIgnore]");
-                        B.AppendLine($"     [ForeignKey(nameof({ModelNamespace}.{Table.Name}.{GetForeignKeyVarName(Ci.Name)}))]");
-                        B.AppendLine($"     public virtual {Ci.ForeignKeyTableName} { GetForeignPropName(Ci.Name)} {{ get; set; }}");
-                        B.AppendLine();
+                    tableDependencies.Add(Fk.RefersToTable);
 
-                        tableDependencies.Add(Ci.ForeignKeyTableName);
-
-                    }
-                }
-                else
-                {
-                    AttProps.AppendLine($"     public object {Ci.Name} {{ get; set; }}");
-                    AttProps.AppendLine();
                 }
             }
 
@@ -672,21 +679,32 @@ namespace DatabaseModel
                 var schema = dbReader.ReadAll();
                 Code.Clear();
 
-                int minDistance = int.MaxValue;
-                var TableName = TableSearch(schema.Tables, this.Table).First();
-
-                var Table = schema.FindTableByName(TableName);
-
-                var Settings = new CodeWriterSettings { CodeTarget = CodeTarget.PocoEntityCodeFirst };
-                var Namer = Settings.Namer;
-
-                if (Table == null)
+                if (AllTables)
                 {
-
+                    var H = new HashSet<string>();
+                    foreach (var T in schema.Tables.Where(x => !(x.Name.StartsWith("pg_") || x.Name.StartsWith("sql_"))))
+                    {
+                        generateDep(0, T, schema, H, Metadata);
+                    }
                 }
                 else
                 {
-                    generateDep(DependencyLevel, Table, schema, new HashSet<string>(), Metadata);
+                    int minDistance = int.MaxValue;
+                    var TableName = TableSearch(schema.Tables, this.Table).First();
+
+                    var Table = schema.FindTableByName(TableName);
+
+                    var Settings = new CodeWriterSettings { CodeTarget = CodeTarget.PocoEntityCodeFirst };
+                    var Namer = Settings.Namer;
+
+                    if (Table == null)
+                    {
+
+                    }
+                    else
+                    {
+                        generateDep(DependencyLevel, Table, schema, new HashSet<string>(), Metadata);
+                    }
                 }
 
                 var filter = Code.GroupBy(x => x.Title).Select(x => new CodeViewModel(x.Key, x.Select(y => y.Code).Aggregate((a, b) => a + b), x.First().IsFile)).ToArray();

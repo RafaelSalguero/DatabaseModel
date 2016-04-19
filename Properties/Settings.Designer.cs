@@ -179,5 +179,17 @@ namespace DatabaseModel.Properties {
                 this["AddInterface"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AllTables {
+            get {
+                return ((bool)(this["AllTables"]));
+            }
+            set {
+                this["AllTables"] = value;
+            }
+        }
     }
 }
